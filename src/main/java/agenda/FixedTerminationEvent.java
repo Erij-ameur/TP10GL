@@ -4,6 +4,8 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Description : A repetitive event that terminates after a given date, or after
@@ -14,6 +16,8 @@ public class FixedTerminationEvent extends RepetitiveEvent {
     private LocalDate terminationInclusive;
 private long numberOfOccurrences;
 private LocalDate calculTermination;
+private List<LocalDate> exceptions = new ArrayList<>();
+
     
     /**
      * Constructs a fixed terminationInclusive event ending at a given date
@@ -30,11 +34,11 @@ private LocalDate calculTermination;
      * @param terminationInclusive the date when this event ends
      */
     public FixedTerminationEvent(String title, LocalDateTime start, Duration duration, ChronoUnit frequency, LocalDate terminationInclusive) {
-         super(title, start, duration, frequency);
-
-         long nbreOccu = frequency.between(start.toLocalDate(), terminationInclusive);
-         this.numberOfOccurrences = nbreOccu;
+        super(title, start, duration, frequency);
+        this.terminationInclusive = terminationInclusive;
+        this.numberOfOccurrences = frequency.between(start.toLocalDate(), terminationInclusive) + 1;
     }
+    
 
     /**
      * Constructs a fixed termination event ending after a number of iterations
@@ -53,9 +57,17 @@ private LocalDate calculTermination;
     public FixedTerminationEvent(String title, LocalDateTime start, Duration duration, ChronoUnit frequency, long numberOfOccurrences) {
         super(title, start, duration, frequency);
         this.numberOfOccurrences = numberOfOccurrences;
-        calculTermination = start.toLocalDate().plus(numberOfOccurrences, frequency);
-
+        this.calculTermination = calculateTerminationDate(start, frequency, numberOfOccurrences);
     }
+    
+    private LocalDate calculateTerminationDate(LocalDateTime start, ChronoUnit frequency, long numberOfOccurrences) {
+        LocalDate terminationDate = start.toLocalDate();
+        for (int i = 1; i < numberOfOccurrences; i++) {
+            terminationDate = terminationDate.plus(1, frequency);
+        }
+        return terminationDate;
+    }
+    
 
     @Override
     public String toString() {
@@ -78,23 +90,25 @@ private LocalDate calculTermination;
         return numberOfOccurrences;
     }
 
+    public void addException(LocalDate date) {
+        exceptions.add(date);
+    }
+    
     @Override
     public boolean isInDay(LocalDate aDay) {
-        boolean isInDay = false;
-        if(getStart().toLocalDate().isEqual(aDay)) {
-            isInDay = true;
-        }else {
-            LocalDate dateOccurence = getStart().toLocalDate();
-            if (!getExceptions().contains(aDay)) {
-                for (int i = 0; i < getNumberOfOccurrences(); i++) {
-                    dateOccurence = dateOccurence.plus(1, getFrequency());
-                    isInDay = dateOccurence.isEqual(aDay);
-                    if(isInDay) {
-                        break;
-                    }
+        if (getStart().toLocalDate().isEqual(aDay)) {
+            return true; // The start date is considered the first occurrence
+        } else {
+            LocalDate dateOccurrence = getStart().toLocalDate();
+            for (int i = 1; i < getNumberOfOccurrences(); i++) { // Start from 1 to exclude the start date
+                dateOccurrence = dateOccurrence.plus(1, getFrequency());
+                if (dateOccurrence.isEqual(aDay) && !exceptions.contains(aDay)) {
+                    return true;
                 }
             }
         }
-        return isInDay;
+        return false;
     }
+
+
 }
