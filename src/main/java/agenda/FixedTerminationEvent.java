@@ -77,5 +77,24 @@ private LocalDate calculTermination;
     public long getNumberOfOccurrences() {
         return numberOfOccurrences;
     }
-        
+
+    @Override
+    public boolean isInDay(LocalDate aDay) {
+        boolean isInDay = false;
+        if(getStart().toLocalDate().isEqual(aDay)) {
+            isInDay = true;
+        }else {
+            LocalDate dateOccurence = getStart().toLocalDate();
+            if (!getExceptions().contains(aDay)) {
+                for (int i = 0; i < getNumberOfOccurrences(); i++) {
+                    dateOccurence = dateOccurence.plus(1, getFrequency());
+                    isInDay = dateOccurence.isEqual(aDay);
+                    if(isInDay) {
+                        break;
+                    }
+                }
+            }
+        }
+        return isInDay;
+    }
 }
